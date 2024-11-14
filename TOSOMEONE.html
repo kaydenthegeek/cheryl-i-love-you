@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner-Managed Display</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .content-area {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .drop-area {
+            width: 300px;
+            height: 300px;
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f9f9f9;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .drop-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .message-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .message-area h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .message-area p {
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .owner-controls {
+            margin-top: 20px;
+        }
+
+        .owner-controls textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .owner-controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .owner-controls button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="container">
+    <div class="content-area">
+        <!-- Image Drop Area -->
+        <div class="drop-area" id="drop-area">
+            <p>Drag and drop an image here</p>
+        </div>
+
+        <!-- Message Area -->
+        <div class="message-area">
+            <h2>Owner's Message</h2>
+            <p id="displayMessage">This is the default message. It can only be updated by the owner.</p>
+        </div>
+    </div>
+
+    <!-- Owner Controls (hidden from regular users) -->
+    <div class="owner-controls" id="ownerControls" style="display: none;">
+        <textarea id="messageInput" placeholder="Write a message..."></textarea>
+        <button id="saveMessageButton">Save Message</button>
+    </div>
+</div>
+
+<script>
+    // Elements
+    const dropArea = document.getElementById('drop-area');
+    const displayMessage = document.getElementById('displayMessage');
+    const messageInput = document.getElementById('messageInput');
+    const saveMessageButton = document.getElementById('saveMessageButton');
+    const ownerControls = document.getElementById('ownerControls');
+    const container = document.getElementById('container');
+
+    // Owner Password for Authentication
+    const OWNER_PASSWORD = "ILOVECHERYL";
+
+    // Load background image and content
+    const savedBackground = localStorage.getItem('backgroundImage');
+    const savedImage = localStorage.getItem('uploadedImage');
+    const savedMessage = localStorage.getItem('savedMessage');
+
+    if (savedBackground) container.style.backgroundImage = `url('${savedBackground}')`;
+    if (savedImage) {
+        const img = document.createElement('img');
+        img.src = savedImage;
+        dropArea.innerHTML = '';
+        dropArea.appendChild(img);
+    }
+    if (savedMessage) displayMessage.textContent = savedMessage;
+
+    // Drag and Drop functionality
+    dropArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropArea.classList.add('hover');
+    });
+
+    dropArea.addEventListener('dragleave', () => {
+        dropArea.classList.remove('hover');
+    });
+
+    dropArea.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropArea.classList.remove('hover');
+
+        // Authenticate the owner
+        const isOwner = prompt("Enter the owner password to update the image:") === OWNER_PASSWORD;
+        if (!isOwner) {
+            alert('You are not authorized to update the image.');
+            return;
+        }
+
+        const file = event.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                dropArea.innerHTML = '';
+                dropArea.appendChild(img);
+
+                // Save image to localStorage
+                localStorage.setItem('uploadedImage', e.target.result);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            alert('Please upload a valid image file.');
+        }
+    });
+
+    // Message saving functionality
+    saveMessageButton.addEventListener('click', () => {
+        const isOwner = prompt("Enter the owner password to update the message:") === OWNER_PASSWORD;
+        if (!isOwner) {
+            alert('You are not authorized to update the message.');
+            return;
+        }
+
+        const message = messageInput.value.trim();
+        if (message) {
+            localStorage.setItem('savedMessage', message);
+            displayMessage.textContent = message;
+            messageInput.value = '';
+        }
+    });
+
+    // Owner authentication for controls
+    const isOwner = prompt("Enter the owner password to access controls:") === OWNER_PASSWORD;
+    if (isOwner) {
+        ownerControls.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
